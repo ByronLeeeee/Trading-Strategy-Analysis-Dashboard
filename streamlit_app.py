@@ -64,10 +64,8 @@ def fetch_data(ticker, start_date, end_date, market="A", frequency="daily", adju
 
         if df.empty:
             raise ValueError(f"No data found for ticker {ticker}")
-             
         # 确保日期列为datetime类型
-        df['日期'] = pd.to_datetime(df['日期'])
-        
+        df['日期'] = pd.to_datetime(df['日期'])   
         # 按日期排序
         df = df.sort_values('日期')
         
@@ -256,218 +254,241 @@ def analyze_current_signals(data: pd.DataFrame):
 # UI Components
 st.title("Trading Strategy Analysis Dashboard")
 
-col1, col2, col3, col_fq = st.columns(4)
+tab_analysis, tab_shares_informations = st.tabs(["Analysis", "Shares Informations"])
 
-with col1:
-    market = st.selectbox("Select Market", ["A", "HK", "US"],help="A: Chinese A-Shares, HK: Hong Kong Shares, US: US Shares", index=0)
-    
-with col2:
-    stock_code = st.text_input("Enter Stock Code")
-    if market == "HK" and stock_code:
-        stock_code = format_hk_stock_code(stock_code)
+with tab_analysis:
+    col1, col2, col3, col_fq = st.columns(4)
 
-with col3:
-    frequency = st.selectbox("Select Frequency", ["daily", "weekly", "monthly"], index=0)
+    with col1:
+        market = st.selectbox("Select Market", ["A", "HK", "US"],help="A: Chinese A-Shares, HK: Hong Kong Shares, US: US Shares", index=0)
+        
+    with col2:
+        stock_code = st.text_input("Enter Stock Code")
+        if market == "HK" and stock_code:
+            stock_code = format_hk_stock_code(stock_code)
 
-# Date selection
-col4, col5 = st.columns(2)
-with col4:
-    start_date = st.date_input(
-        "Start Date",
-        datetime.now() - timedelta(days=365*4)
-    )
-with col5:
-    end_date = st.date_input(
-        "End Date",
-        datetime.now()
-    )
+    with col3:
+        frequency = st.selectbox("Select Frequency", ["daily", "weekly", "monthly"], index=0)
 
-with col_fq:
-    adjust = st.selectbox("Adjust Type", 
-                         options=[None, "qfq", "hfq"],
-                         format_func=lambda x: {
-                             "": "No Adjustment",
-                             "qfq": "Forward",
-                             "hfq": "Backward"
-                         }.get(x),
-                         index=1)  # 默认选择前复权
+    # Date selection
+    col4, col5 = st.columns(2)
+    with col4:
+        start_date = st.date_input(
+            "Start Date",
+            datetime.now() - timedelta(days=365*4)
+        )
+    with col5:
+        end_date = st.date_input(
+            "End Date",
+            datetime.now()
+        )
 
-# Strategy parameters
-st.subheader("Strategy Parameters")
-col6, col7, col8, col9 = st.columns(4)
+    with col_fq:
+        adjust = st.selectbox("Adjust Type", 
+                            options=[None, "qfq", "hfq"],
+                            format_func=lambda x: {
+                                "": "No Adjustment",
+                                "qfq": "Forward",
+                                "hfq": "Backward"
+                            }.get(x),
+                            index=1)  # 默认选择前复权
 
-with col6:
-    st.markdown(
-        '<div title="Moving Average Strategy: Buy when the fast moving average (MA) crosses above the slow MA, sell when the fast MA crosses below the slow MA. The fast MA is a shorter-term average, while the slow MA is a longer-term average."><h5>Moving Average Parameters</h5></div>',
-        unsafe_allow_html=True
-    )
-    ma_fast = st.number_input("Fast MA Period", value=50, min_value=1, help='The "Fast MA Period" refers to the shorter time period used to calculate the fast moving average (MA), which is more responsive to recent price changes and is used to identify short-term trends.')
-    ma_slow = st.number_input("Slow MA Period", value=200, min_value=1, help='The "Slow MA Period" refers to the longer time period used to calculate the slow moving average (MA), which is less responsive to recent price changes and is used to identify long-term trends.')
+    # Strategy parameters
+    st.subheader("Strategy Parameters")
+    col6, col7, col8, col9 = st.columns(4)
 
-with col7:
-    st.markdown(
-        '<div title="RSI (Relative Strength Index) Strategy: Buy when RSI falls below the lower bound (oversold), sell when RSI rises above the upper bound (overbought). The RSI period determines the lookback window for calculating RSI."><h5>RSI Parameters</h5></div>',
-        unsafe_allow_html=True
-    )
-    rsi_period = st.number_input("RSI Period", value=14, min_value=1, help='The "RSI Period" refers to the time period used to calculate the Relative Strength Index (RSI), which measures the speed and change of price movements. A shorter period results in a more sensitive RSI, while a longer period results in a smoother RSI.')
-    rsi_upper = st.number_input("RSI Upper Bound", value=70, min_value=50, max_value=90, help='The "RSI Upper Bound" is the threshold value above which the RSI is considered overbought. When the RSI exceeds this value, it may indicate a potential sell signal.')
-    rsi_lower = st.number_input("RSI Lower Bound", value=30, min_value=10, max_value=50, help='The "RSI Lower Bound" is the threshold value below which the RSI is considered oversold. When the RSI falls below this value, it may indicate a potential buy signal.')
+    with col6:
+        st.markdown(
+            '<div title="Moving Average Strategy: Buy when the fast moving average (MA) crosses above the slow MA, sell when the fast MA crosses below the slow MA. The fast MA is a shorter-term average, while the slow MA is a longer-term average."><h5>Moving Average Parameters</h5></div>',
+            unsafe_allow_html=True
+        )
+        ma_fast = st.number_input("Fast MA Period", value=50, min_value=1, help='The "Fast MA Period" refers to the shorter time period used to calculate the fast moving average (MA), which is more responsive to recent price changes and is used to identify short-term trends.')
+        ma_slow = st.number_input("Slow MA Period", value=200, min_value=1, help='The "Slow MA Period" refers to the longer time period used to calculate the slow moving average (MA), which is less responsive to recent price changes and is used to identify long-term trends.')
 
-with col8:
-    st.markdown(
-        '<div title="MACD (Moving Average Convergence Divergence) Strategy: Buy when the MACD line crosses above the signal line, sell when the MACD line crosses below the signal line. The MACD fast, slow, and signal periods determine the lookback windows for calculating the MACD and signal lines."><h5>MACD Parameters</h5></div>',
-        unsafe_allow_html=True
-    )
-    macd_fast = st.number_input("MACD Fast Period", value=12, min_value=1, help='The "MACD Fast Period" refers to the shorter time period used to calculate the fast Exponential Moving Average (EMA) for the Moving Average Convergence Divergence (MACD) indicator. It is used to capture short-term price movements.')
-    macd_slow = st.number_input("MACD Slow Period", value=26, min_value=1, help='The "MACD Slow Period" refers to the longer time period used to calculate the slow Exponential Moving Average (EMA) for the Moving Average Convergence Divergence (MACD) indicator. It is used to capture long-term price movements.')
-    macd_signal = st.number_input("MACD Signal Period", value=9, min_value=1, help='The "MACD Signal Period" refers to the time period used to calculate the signal line for the Moving Average Convergence Divergence (MACD) indicator. The signal line is typically an EMA of the MACD line.')
+    with col7:
+        st.markdown(
+            '<div title="RSI (Relative Strength Index) Strategy: Buy when RSI falls below the lower bound (oversold), sell when RSI rises above the upper bound (overbought). The RSI period determines the lookback window for calculating RSI."><h5>RSI Parameters</h5></div>',
+            unsafe_allow_html=True
+        )
+        rsi_period = st.number_input("RSI Period", value=14, min_value=1, help='The "RSI Period" refers to the time period used to calculate the Relative Strength Index (RSI), which measures the speed and change of price movements. A shorter period results in a more sensitive RSI, while a longer period results in a smoother RSI.')
+        rsi_upper = st.number_input("RSI Upper Bound", value=70, min_value=50, max_value=90, help='The "RSI Upper Bound" is the threshold value above which the RSI is considered overbought. When the RSI exceeds this value, it may indicate a potential sell signal.')
+        rsi_lower = st.number_input("RSI Lower Bound", value=30, min_value=10, max_value=50, help='The "RSI Lower Bound" is the threshold value below which the RSI is considered oversold. When the RSI falls below this value, it may indicate a potential buy signal.')
 
-with col9:
-    st.markdown(
-        '<div title="Momentum Strategy: Buy when the price momentum is positive, sell when the price momentum is negative. The momentum period determines the lookback window for calculating the momentum."><h5>Momentum Strategy Parameters</h5></div>',
-        unsafe_allow_html=True
-    )
-    momentum_period = st.number_input("Momentum Period", value=20, min_value=1, help='The "Momentum Period" refers to the time period used to calculate the momentum indicator, which measures the rate of price change over a specific period. A shorter period results in a more sensitive momentum indicator, while a longer period results in a smoother indicator.')
+    with col8:
+        st.markdown(
+            '<div title="MACD (Moving Average Convergence Divergence) Strategy: Buy when the MACD line crosses above the signal line, sell when the MACD line crosses below the signal line. The MACD fast, slow, and signal periods determine the lookback windows for calculating the MACD and signal lines."><h5>MACD Parameters</h5></div>',
+            unsafe_allow_html=True
+        )
+        macd_fast = st.number_input("MACD Fast Period", value=12, min_value=1, help='The "MACD Fast Period" refers to the shorter time period used to calculate the fast Exponential Moving Average (EMA) for the Moving Average Convergence Divergence (MACD) indicator. It is used to capture short-term price movements.')
+        macd_slow = st.number_input("MACD Slow Period", value=26, min_value=1, help='The "MACD Slow Period" refers to the longer time period used to calculate the slow Exponential Moving Average (EMA) for the Moving Average Convergence Divergence (MACD) indicator. It is used to capture long-term price movements.')
+        macd_signal = st.number_input("MACD Signal Period", value=9, min_value=1, help='The "MACD Signal Period" refers to the time period used to calculate the signal line for the Moving Average Convergence Divergence (MACD) indicator. The signal line is typically an EMA of the MACD line.')
 
-# Run Analysis button
-run_analysis = st.button("Run Analysis")
+    with col9:
+        st.markdown(
+            '<div title="Momentum Strategy: Buy when the price momentum is positive, sell when the price momentum is negative. The momentum period determines the lookback window for calculating the momentum."><h5>Momentum Strategy Parameters</h5></div>',
+            unsafe_allow_html=True
+        )
+        momentum_period = st.number_input("Momentum Period", value=20, min_value=1, help='The "Momentum Period" refers to the time period used to calculate the momentum indicator, which measures the rate of price change over a specific period. A shorter period results in a more sensitive momentum indicator, while a longer period results in a smoother indicator.')
 
-if run_analysis and stock_code:
-    try:
-        with st.spinner('Fetching and analyzing data...'):
-            # Fetch and process data
-            data = fetch_data(stock_code, date_to_str(start_date), date_to_str(end_date), market, frequency, adjust)
-            data, close_col = preprocess_data(data)
+    # Run Analysis button
+    run_analysis = st.button("Run Analysis")
 
-            # Create tabs for different visualizations
-            tab1, tab2, tab3 = st.tabs(["Strategy Performance", "Current Signals", "Raw Data"])
+    if run_analysis and stock_code:
+        try:
+            with st.spinner('Fetching and analyzing data...'):
+                # Fetch and process data
+                data = fetch_data(stock_code, date_to_str(start_date), date_to_str(end_date), market, frequency, adjust)
+                data, close_col = preprocess_data(data)
 
-            with tab1:
-                # Implement strategies
-                ma_data = implement_ma_strategy(data.copy(), close_col, fast_period=ma_fast, slow_period=ma_slow)
-                rsi_data = implement_rsi_strategy(data.copy(), close_col, rsi_period=rsi_period, 
-                                               rsi_upper=rsi_upper, rsi_lower=rsi_lower)
-                macd_data = implement_macd_strategy(data.copy(), close_col, short_period=macd_fast, 
-                                                  long_period=macd_slow, signal_period=macd_signal)
-                my_strategy_data = implement_my_strategy(data.copy(), close_col, momentum_period=momentum_period)
+                # Create tabs for different visualizations
+                tab1, tab2, tab3 = st.tabs(["Strategy Performance", "Current Signals", "Raw Data"])
 
-                # Run backtests
-                ma_results = backtest_strategy(ma_data, "Moving Average")
-                rsi_results = backtest_strategy(rsi_data, "RSI")
-                macd_results = backtest_strategy(macd_data, "MACD")
-                my_strategy_results = backtest_strategy(my_strategy_data, "Momentum Strategy")
+                with tab1:
+                    # Implement strategies
+                    ma_data = implement_ma_strategy(data.copy(), close_col, fast_period=ma_fast, slow_period=ma_slow)
+                    rsi_data = implement_rsi_strategy(data.copy(), close_col, rsi_period=rsi_period, 
+                                                rsi_upper=rsi_upper, rsi_lower=rsi_lower)
+                    macd_data = implement_macd_strategy(data.copy(), close_col, short_period=macd_fast, 
+                                                    long_period=macd_slow, signal_period=macd_signal)
+                    my_strategy_data = implement_my_strategy(data.copy(), close_col, momentum_period=momentum_period)
 
-                # Display results in a DataFrame
-                results_df = pd.DataFrame({
-                    'Strategy': ['Moving Average', 'RSI', 'MACD', 'Momentum Strategy'],
-                    'Total Return': [ma_results[2], rsi_results[2], macd_results[2], my_strategy_results[2]],
-                    'Annual Return': [ma_results[3], rsi_results[3], macd_results[3], my_strategy_results[3]],
-                    'Max Drawdown': [ma_results[1], rsi_results[1], macd_results[1], my_strategy_results[1]],
-                    'Sharpe Ratio': [ma_results[4], rsi_results[4], macd_results[4], my_strategy_results[4]]
-                })
+                    # Run backtests
+                    ma_results = backtest_strategy(ma_data, "Moving Average")
+                    rsi_results = backtest_strategy(rsi_data, "RSI")
+                    macd_results = backtest_strategy(macd_data, "MACD")
+                    my_strategy_results = backtest_strategy(my_strategy_data, "Momentum Strategy")
 
-                results_df = results_df.set_index('Strategy')
-                # Format percentage columns
-                for col in ['Total Return', 'Annual Return', 'Max Drawdown']:
-                    results_df[col] = results_df[col].apply(lambda x: f'{x:.2%}')
-                # Format Sharpe Ratio
-                results_df['Sharpe Ratio'] = results_df['Sharpe Ratio'].apply(lambda x: f'{x:.2f}')
-                
-                st.subheader("Strategy Performance Metrics")
-                st.dataframe(results_df, use_container_width=True)
+                    # Display results in a DataFrame
+                    results_df = pd.DataFrame({
+                        'Strategy': ['Moving Average', 'RSI', 'MACD', 'Momentum Strategy'],
+                        'Total Return': [ma_results[2], rsi_results[2], macd_results[2], my_strategy_results[2]],
+                        'Annual Return': [ma_results[3], rsi_results[3], macd_results[3], my_strategy_results[3]],
+                        'Max Drawdown': [ma_results[1], rsi_results[1], macd_results[1], my_strategy_results[1]],
+                        'Sharpe Ratio': [ma_results[4], rsi_results[4], macd_results[4], my_strategy_results[4]]
+                    })
 
-                # Plot strategy comparison
-                cumulative_returns = pd.DataFrame({
-                    'Date': ma_results[0]['日期'],
-                    'Moving Average': ma_results[0]['Cumulative_Return'],
-                    'RSI': rsi_results[0]['Cumulative_Return'],
-                    'MACD': macd_results[0]['Cumulative_Return'],
-                    'Momentum Strategy': my_strategy_results[0]['Cumulative_Return'],
-                    'Buy & Hold': ma_results[0]['Buy_Hold_Return']
-                })
-                cumulative_returns.set_index('Date', inplace=True)
+                    results_df = results_df.set_index('Strategy')
+                    # Format percentage columns
+                    for col in ['Total Return', 'Annual Return', 'Max Drawdown']:
+                        results_df[col] = results_df[col].apply(lambda x: f'{x:.2%}')
+                    # Format Sharpe Ratio
+                    results_df['Sharpe Ratio'] = results_df['Sharpe Ratio'].apply(lambda x: f'{x:.2f}')
+                    
+                    st.subheader("Strategy Performance Metrics")
+                    st.dataframe(results_df, use_container_width=True)
 
-                # 绘制回撤
-                drawdowns = pd.DataFrame({
-                    'Date': ma_results[0]['日期'],
-                    'Moving Average': ma_results[0]['Drawdown'] * 100,
-                    'RSI': rsi_results[0]['Drawdown'] * 100,
-                    'MACD': macd_results[0]['Drawdown'] * 100,
-                    'Momentum Strategy': my_strategy_results[0]['Drawdown'] * 100
-                })
-                drawdowns.set_index('Date', inplace=True)
+                    # Plot strategy comparison
+                    cumulative_returns = pd.DataFrame({
+                        'Date': ma_results[0]['日期'],
+                        'Moving Average': ma_results[0]['Cumulative_Return'],
+                        'RSI': rsi_results[0]['Cumulative_Return'],
+                        'MACD': macd_results[0]['Cumulative_Return'],
+                        'Momentum Strategy': my_strategy_results[0]['Cumulative_Return'],
+                        'Buy & Hold': ma_results[0]['Buy_Hold_Return']
+                    })
+                    cumulative_returns.set_index('Date', inplace=True)
 
-                # 使用 st.line_chart 绘制累积回报
-                st.subheader(f'Strategy Cumulative Returns')
-                st.line_chart(cumulative_returns)
+                    # 绘制回撤
+                    drawdowns = pd.DataFrame({
+                        'Date': ma_results[0]['日期'],
+                        'Moving Average': ma_results[0]['Drawdown'] * 100,
+                        'RSI': rsi_results[0]['Drawdown'] * 100,
+                        'MACD': macd_results[0]['Drawdown'] * 100,
+                        'Momentum Strategy': my_strategy_results[0]['Drawdown'] * 100
+                    })
+                    drawdowns.set_index('Date', inplace=True)
 
-                # 使用 st.line_chart 绘制回撤
-                st.subheader('Strategy Drawdown (%)')
-                st.line_chart(drawdowns)
+                    # 使用 st.line_chart 绘制累积回报
+                    st.subheader(f'Strategy Cumulative Returns')
+                    st.line_chart(cumulative_returns)
 
-            with tab2:
-                # Analyze and display current signals
-                st.subheader("Current Trading Signals")
-                
-                ma_signals = analyze_current_signals(ma_data)
-                rsi_signals = analyze_current_signals(rsi_data)
-                macd_signals = analyze_current_signals(macd_data)
-                momentum_signals = analyze_current_signals(my_strategy_data)
+                    # 使用 st.line_chart 绘制回撤
+                    st.subheader('Strategy Drawdown (%)')
+                    st.line_chart(drawdowns)
 
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    st.metric("MA Strategy", ma_signals.get('MA', 'N/A'))
-                with col2:
-                    st.metric("RSI Strategy", rsi_signals.get('RSI', 'N/A'))
-                with col3:
-                    st.metric("MACD Strategy", macd_signals.get('MACD', 'N/A'))
-                with col4:
-                    st.metric("Momentum Strategy", momentum_signals.get('Momentum', 'N/A'))
+                with tab2:
+                    # Analyze and display current signals
+                    st.subheader("Current Trading Signals")
+                    
+                    ma_signals = analyze_current_signals(ma_data)
+                    rsi_signals = analyze_current_signals(rsi_data)
+                    macd_signals = analyze_current_signals(macd_data)
+                    momentum_signals = analyze_current_signals(my_strategy_data)
 
-                # Display additional technical indicators
-                st.subheader("Technical Indicators")
-                latest_data = data.iloc[-1]
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.metric("Current Price", f"{latest_data['收盘']:.2f}")
-                    if 'MA_Fast' in ma_data.columns:
-                        st.metric(f"{ma_fast}-day Moving Average", f"{ma_data['MA_Fast'].iloc[-1]:.2f}")
-                    if 'MA_Slow' in ma_data.columns:
-                        st.metric(f"{ma_slow}-day Moving Average", f"{ma_data['MA_Slow'].iloc[-1]:.2f}")
-                
-                with col2:
-                    if 'RSI' in rsi_data.columns:
-                        st.metric("RSI", f"{rsi_data['RSI'].iloc[-1]:.2f}")
-                    if 'MACD' in macd_data.columns:
-                        st.metric("MACD", f"{macd_data['MACD'].iloc[-1]:.2f}")
-                    if 'Momentum' in my_strategy_data.columns:
-                        st.metric("Momentum", f"{my_strategy_data['Momentum'].iloc[-1]:.2%}")
+                    col1, col2, col3, col4 = st.columns(4)
+                    
+                    with col1:
+                        st.metric("MA Strategy", ma_signals.get('MA', 'N/A'))
+                    with col2:
+                        st.metric("RSI Strategy", rsi_signals.get('RSI', 'N/A'))
+                    with col3:
+                        st.metric("MACD Strategy", macd_signals.get('MACD', 'N/A'))
+                    with col4:
+                        st.metric("Momentum Strategy", momentum_signals.get('Momentum', 'N/A'))
 
-            with tab3:
-                st.subheader("Raw Data Preview (Latest 100 Records)")
-                # 修改列标题为英文
-                data.rename(columns={
-                    '日期': 'Date',
-                    '开盘': 'Open',
-                    '收盘': 'Close',
-                    '最高': 'High',
-                    '最低': 'Low',
-                    '成交量': 'Volume',
-                    '成交额': 'Turnover',
-                    '振幅': 'Amplitude',
-                    '涨跌幅': 'Change %',
-                    '涨跌额': 'Change',
-                    '换手率': 'Turnover Rate'
-                }, inplace=True)
-                st.dataframe(data.tail(100).iloc[::-1], use_container_width=True)
+                    # Display additional technical indicators
+                    st.subheader("Technical Indicators")
+                    latest_data = data.iloc[-1]
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.metric("Current Price", f"{latest_data['收盘']:.2f}")
+                        if 'MA_Fast' in ma_data.columns:
+                            st.metric(f"{ma_fast}-day Moving Average", f"{ma_data['MA_Fast'].iloc[-1]:.2f}")
+                        if 'MA_Slow' in ma_data.columns:
+                            st.metric(f"{ma_slow}-day Moving Average", f"{ma_data['MA_Slow'].iloc[-1]:.2f}")
+                    
+                    with col2:
+                        if 'RSI' in rsi_data.columns:
+                            st.metric("RSI", f"{rsi_data['RSI'].iloc[-1]:.2f}")
+                        if 'MACD' in macd_data.columns:
+                            st.metric("MACD", f"{macd_data['MACD'].iloc[-1]:.2f}")
+                        if 'Momentum' in my_strategy_data.columns:
+                            st.metric("Momentum", f"{my_strategy_data['Momentum'].iloc[-1]:.2%}")
 
-    except Exception as e:
-        st.error(f"Error occurred: {str(e)}")
-else:
-    if not stock_code and run_analysis:
-        st.warning("Please enter a stock code")
+                with tab3:
+                    st.subheader("Raw Data Preview (Latest 100 Records)")
+                    # 修改列标题为英文
+                    data.rename(columns={
+                        '日期': 'Date',
+                        '开盘': 'Open',
+                        '收盘': 'Close',
+                        '最高': 'High',
+                        '最低': 'Low',
+                        '成交量': 'Volume',
+                        '成交额': 'Turnover',
+                        '振幅': 'Amplitude',
+                        '涨跌幅': 'Change %',
+                        '涨跌额': 'Change',
+                        '换手率': 'Turnover Rate'
+                    }, inplace=True)
+                    st.dataframe(data.tail(100).iloc[::-1], use_container_width=True)
+
+        except Exception as e:
+            st.error(f"Error occurred: {str(e)}")
+    else:
+        if not stock_code and run_analysis:
+            st.warning("Please enter a stock code")
+
+with tab_shares_informations:
+
+    st.subheader("A-Shares")
+    st.write("A-shares are shares of mainland China-based companies that trade on the two Chinese stock exchanges, the Shanghai Stock Exchange and the Shenzhen Stock Exchange. A-shares are quoted in Chinese yuan renminbi (CNY).")
+    A_shares_df = ak.stock_zh_a_spot_em()
+    st.dataframe(A_shares_df, use_container_width=True)
+    st.markdown("""---""")
+
+    st.subheader("Hong Kong Shares")
+    st.write("Hong Kong shares are shares of companies that trade on the Hong Kong Stock Exchange. Hong Kong shares are quoted in Hong Kong dollars (HKD).")
+    HK_shares_df = ak.stock_hk_spot_em()
+    st.dataframe(HK_shares_df, use_container_width=True)
+    st.markdown("""---""")
+
+    st.subheader("US Shares")
+    st.write("US shares are shares of companies that trade on US stock exchanges such as the New York Stock Exchange (NYSE) and the Nasdaq Stock Market. US shares are quoted in US dollars (USD).")
+    US_shares_df = ak.stock_us_spot_em()
+    st.dataframe(US_shares_df, use_container_width=True)
+    st.markdown("""---""")
 
 if __name__ == "__main__":
     # This will only run when the script is run directly
