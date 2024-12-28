@@ -470,25 +470,43 @@ with tab_analysis:
         if not stock_code and run_analysis:
             st.warning("Please enter a stock code")
 
-with tab_shares_informations:
 
+with tab_shares_informations:
     st.subheader("A-Shares")
-    st.write("A-shares are shares of mainland China-based companies that trade on the two Chinese stock exchanges, the Shanghai Stock Exchange and the Shenzhen Stock Exchange. A-shares are quoted in Chinese yuan renminbi (CNY).")
-    A_shares_df = ak.stock_zh_a_spot_em()
-    st.dataframe(A_shares_df, use_container_width=True)
-    st.markdown("""---""")
+    st.write(
+        "A-shares are shares of mainland China-based companies that trade on the two Chinese stock exchanges, the Shanghai Stock Exchange and the Shenzhen Stock Exchange. A-shares are quoted in Chinese yuan renminbi (CNY)."
+    )
+    if st.button("Refresh A-Shares Data"):
+        try:
+            with st.spinner("Loading A-Shares data..."):
+                A_shares_df = ak.stock_zh_a_spot_em()
+                st.dataframe(A_shares_df, use_container_width=True)
+        except Exception as e:
+            st.error(f"Failed to load A-Shares data: {str(e)}")
 
     st.subheader("Hong Kong Shares")
-    st.write("Hong Kong shares are shares of companies that trade on the Hong Kong Stock Exchange. Hong Kong shares are quoted in Hong Kong dollars (HKD).")
-    HK_shares_df = ak.stock_hk_spot_em()
-    st.dataframe(HK_shares_df, use_container_width=True)
-    st.markdown("""---""")
+    st.write(
+        "Hong Kong shares are shares of companies that trade on the Hong Kong Stock Exchange. Hong Kong shares are quoted in Hong Kong dollars (HKD)."
+    )
+    if st.button("Refresh Hong Kong Shares Data"):
+        try:
+            with st.spinner("Loading Hong Kong Shares data..."):
+                HK_shares_df = ak.stock_hk_spot_em()
+                st.dataframe(HK_shares_df, use_container_width=True)
+        except Exception as e:
+            st.error(f"Failed to load Hong Kong Shares data: {str(e)}")
 
     st.subheader("US Shares")
-    st.write("US shares are shares of companies that trade on US stock exchanges such as the New York Stock Exchange (NYSE) and the Nasdaq Stock Market. US shares are quoted in US dollars (USD).")
-    US_shares_df = ak.stock_us_spot_em()
-    st.dataframe(US_shares_df, use_container_width=True)
-    st.markdown("""---""")
+    st.write(
+        "US shares are shares of companies that trade on US stock exchanges such as the New York Stock Exchange (NYSE) and the Nasdaq Stock Market. US shares are quoted in US dollars (USD)."
+    )
+    if st.button("Refresh US Shares Data"):
+        try:
+            with st.spinner("Loading US Shares data..."):
+                US_shares_df = ak.stock_us_spot_em()
+                st.dataframe(US_shares_df, use_container_width=True)
+        except Exception as e:
+            st.error(f"Failed to load US Shares data: {str(e)}")
 
 if __name__ == "__main__":
     # This will only run when the script is run directly
