@@ -224,7 +224,7 @@ def backtest_strategy(data:pd.DataFrame, strategy_name):
 
 def analyze_current_signals(data: pd.DataFrame):
     """
-    Analyze the current signals for all strategies.
+    Analyze the current signals for all strategies with detailed threshold information.
     """
     if data.empty:
         return {}
@@ -232,22 +232,54 @@ def analyze_current_signals(data: pd.DataFrame):
     latest_data = data.iloc[-1]
     signals = {}
 
-    if 'MA_Signal' in data.columns:
-        signals['MA'] = 'Buy' if latest_data['MA_Signal'] == 1 else 'Sell' if latest_data['MA_Signal'] == -1 else 'Hold'
+    # MA Strategy Signal
+    if 'MA_Fast' in data.columns and 'MA_Slow' in data.columns:
+        ma_fast_value = latest_data['MA_Fast']
+        ma_slow_value = latest_data['MA_Slow']
+        ma_signal = 'Buy' if latest_data['MA_Signal'] == 1 else 'Sell' if latest_data['MA_Signal'] == -1 else 'Hold'
+        signals['MA'] = {
+            'signal': ma_signal,
+            'fast_ma': f'{ma_fast_value:.2f}',
+            'slow_ma': f'{ma_slow_value:.2f}',
+            'description': f'Fast MA: {ma_fast_value:.2f}\nSlow MA: {ma_slow_value:.2f}\nSignal: {ma_signal}'
+        }
 
+    # RSI Strategy Signal
     if 'RSI' in data.columns:
-        if latest_data['RSI'] < 30:
-            signals['RSI'] = 'Buy (Oversold)'
-        elif latest_data['RSI'] > 70:
-            signals['RSI'] = 'Sell (Overbought)'
+        rsi_value = latest_data['RSI']
+        if rsi_value < 30:
+            rsi_signal = 'Buy (Oversold)'
+        elif rsi_value > 70:
+            rsi_signal = 'Sell (Overbought)'
         else:
-            signals['RSI'] = f'Hold (RSI: {latest_data["RSI"]:.2f})'
+            rsi_signal = 'Hold'
+        signals['RSI'] = {
+            'signal': rsi_signal,
+            'value': f'{rsi_value:.2f}',
+            'description': f'RSI: {rsi_value:.2f}\nOversold < 30\nOverbought > 70\nSignal: {rsi_signal}'
+        }
 
-    if 'MACD_Signal' in data.columns:
-        signals['MACD'] = 'Buy' if latest_data['MACD_Signal'] == 1 else 'Sell' if latest_data['MACD_Signal'] == -1 else 'Hold'
+    # MACD Strategy Signal
+    if 'MACD' in data.columns and 'Signal_Line' in data.columns:
+        macd_value = latest_data['MACD']
+        signal_line = latest_data['Signal_Line']
+        macd_signal = 'Buy' if latest_data['MACD_Signal'] == 1 else 'Sell' if latest_data['MACD_Signal'] == -1 else 'Hold'
+        signals['MACD'] = {
+            'signal': macd_signal,
+            'macd': f'{macd_value:.2f}',
+            'signal_line': f'{signal_line:.2f}',
+            'description': f'MACD: {macd_value:.2f}\nSignal Line: {signal_line:.2f}\nSignal: {macd_signal}'
+        }
 
-    if 'Momentum_Signal' in data.columns:
-        signals['Momentum'] = 'Buy' if latest_data['Momentum_Signal'] == 1 else 'Sell' if latest_data['Momentum_Signal'] == -1 else 'Hold'
+    # Momentum Strategy Signal
+    if 'Momentum' in data.columns:
+        momentum_value = latest_data['Momentum']
+        momentum_signal = 'Buy' if latest_data['Momentum_Signal'] == 1 else 'Sell' if latest_data['Momentum_Signal'] == -1 else 'Hold'
+        signals['Momentum'] = {
+            'signal': momentum_signal,
+            'value': f'{momentum_value:.2%}',
+            'description': f'Momentum: {momentum_value:.2%}\nBuy if > 0\nSell if < 0\nSignal: {momentum_signal}'
+        }
 
     return signals
 
@@ -407,7 +439,6 @@ with tab_analysis:
                     st.line_chart(drawdowns)
 
                 with tab2:
-                    # Analyze and display current signals
                     st.subheader("Current Trading Signals")
                     
                     ma_signals = analyze_current_signals(ma_data)
@@ -418,13 +449,24 @@ with tab_analysis:
                     col1, col2, col3, col4 = st.columns(4)
                     
                     with col1:
-                        st.metric("MA Strategy", ma_signals.get('MA', 'N/A'))
+                        if 'MA' in ma_signals:
+                            st.metric("MA Strategy", ma_signals['MA']['signal'])
+                            st.text(ma_signals['MA']['description'])
+                    
                     with col2:
-                        st.metric("RSI Strategy", rsi_signals.get('RSI', 'N/A'))
+                        if 'RSI' in rsi_signals:
+                            st.metric("RSI Strategy", rsi_signals['RSI']['signal'])
+                            st.text(rsi_signals['RSI']['description'])
+                    
                     with col3:
-                        st.metric("MACD Strategy", macd_signals.get('MACD', 'N/A'))
+                        if 'MACD' in macd_signals:
+                            st.metric("MACD Strategy", macd_signals['MACD']['signal'])
+                            st.text(macd_signals['MACD']['description'])
+                    
                     with col4:
-                        st.metric("Momentum Strategy", momentum_signals.get('Momentum', 'N/A'))
+                        if 'Momentum' in momentum_signals:
+                            st.metric("Momentum Strategy", momentum_signals['Momentum']['signal'])
+                            st.text(momentum_signals['Momentum']['description'])
 
                     # Display additional technical indicators
                     st.subheader("Technical Indicators")
